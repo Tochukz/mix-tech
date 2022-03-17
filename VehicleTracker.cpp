@@ -15,6 +15,11 @@ struct Position
     float Longitude;
     int64_t RecordedTimeUTC;
 };
+struct Vehicle
+{
+    Position Position;
+    double Distance;
+};
 
 struct VehicleTracker
 {
@@ -41,54 +46,47 @@ public:
     
        ifstream binaryFile;
        int size = 0;
+
        binaryFile.open(filename, ios::binary);
        binaryFile.seekg(0, ios::end);
        size = static_cast<int>(binaryFile.tellg());
        binaryFile.seekg(0, ios::beg);
- 
+       size_t positionSize = sizeof(Position);
        while (binaryFile.tellg() < size)
        {
            Position position;
-           binaryFile.read(reinterpret_cast<char*>(&position.PositionId), sizeof(position.PositionId));
-           binaryFile.read(reinterpret_cast<char*>(&position.VehicleRegistration), sizeof(position.VehicleRegistration));
-           binaryFile.read(reinterpret_cast<char*>(&position.Latitude), sizeof(position.Latitude));
-           binaryFile.read(reinterpret_cast<char*>(&position.Longitude), sizeof(position.Longitude));
-           binaryFile.read(reinterpret_cast<char*>(&position.RecordedTimeUTC), sizeof(position.RecordedTimeUTC));
-           
-           //cout << position.PositionId << "\t" << position.VehicleRegistration << "\t" << position.Latitude << "\t" << position.Longitude << "\t" << position.RecordedTimeUTC << endl;
-          // cout << position.Latitude << "\t" << position.Longitude  <<  endl;
+           binaryFile.read(reinterpret_cast<char*>(&position), positionSize);
            Positions.push_back(position);
        }
-       
        
        printf("Total Record %d\n", Positions.size());
        binaryFile.close();
     }
 
-    vector<double> GetShortestDistance(vector<Position> &vehicles)
+    vector<Vehicle> GetShortestDistance(vector<Position> &vehiclePositions)
     {
-        //printf("Getting shortest distances of %d vehicles\n", vehicles.size());
         const float maxDistance = 7600;
-        vector<double> shortestDistances;
+        vector<Vehicle> vehicles;
         int i = 0;
-        for(Position val : vehicles)
+        for(Position val : vehiclePositions)
         {
-            shortestDistances.push_back(maxDistance);
+            Position position;
+            Vehicle vehicle { position, maxDistance };
+            vehicles.push_back(vehicle);
             i++;
         }
 
         for(Position position: Positions) {
-            for(size_t i = 0; i < vehicles.size(); i++) {
-               double distance = CalculateDistance(position, vehicles[i]);
-               if (distance < shortestDistances[i])
+            for(size_t i = 0; i < vehiclePositions.size(); i++) {
+               double distance = CalculateDistance(position, vehiclePositions[i]);
+               if (distance < vehicles[i].Distance)
                {
-                   shortestDistances[i] = distance;
-               }
-            
+                   Vehicle vehicle { position, distance };
+                   vehicles[i] = vehicle;
+               }            
             }
         }
-       // printf("Shortest distance count %d\n", shortestDistances.size());
-        return shortestDistances;
+        return vehicles;
     }
 
     double CalculateDistance(Position pointA, Position pointB)
@@ -141,20 +139,28 @@ int main()
     }
 
     auto startT = high_resolution_clock::now();
-    vector<double> shortestDistances = tracker->GetShortestDistance(positions);
+    vector<Vehicle> vehicles = tracker->GetShortestDistance(positions);
     auto endT = high_resolution_clock::now();
     auto timeSpan = duration_cast<milliseconds>(endT - startT);
     printf("Closest position calculation execution time: %d ms \n", timeSpan);
 
     printf("Shortest Distances: \n");
-    for (int i = 0; i < shortestDistances.size(); i++)
+    for (int i = 0; i < vehicles.size(); i++)
     {
-       printf("Lat: %f, Lng: %f - Dist: %f Km \n", positions[i].Latitude, positions[i].Longitude, shortestDistances[i]);
+       printf("Lat: %f, Lng: %f => Lat: %f, Lng: %f, Dist: %f Km \n", positions[i].Latitude, positions[i].Longitude, vehicles[i].Position.Latitude, vehicles[i].Position.Longitude,vehicles[i].Distance);
     }
 
+   /*
+    auto startX = high_resolution_clock::now();
+
     printf("Total execution time: %d ms \n", (duration+ timeSpan));
-    // Position pointA { 1 , "Position 1",  53.32055555555556, -1.7297222222222221};
-    // Position pointB { 2, "Position 2", 53.31861111111111, -1.6997222222222223};
-    // double distance = tracker->CalculateDistance(pointA, pointB);
-    // printf("Distance = %f Km", distance);
+    Position pointA { 1 , "Position 1",  53.32055555555556, -1.7297222222222221};
+    Position pointB { 2, "Position 2", 53.31861111111111, -1.6997222222222223};
+    double distance = tracker->CalculateDistance(pointA, pointB);
+    printf("Distance = %f Km \n", distance);
+
+    auto endX = high_resolution_clock::now();
+    auto timeSpanX = duration_cast<milliseconds>(endX - startX);
+    printf("Calculation execution time: %d ms \n", timeSpanX);
+    */
 }
