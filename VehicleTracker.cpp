@@ -199,4 +199,5 @@ int main()
        printf("%d. (%f, %f) \t (%f, %f)  %f Km \n", i+1, positions[i].Latitude, positions[i].Longitude, vehicles[i].Position.Latitude, vehicles[i].Position.Longitude,vehicles[i].Distance);
     } 
     printf("Total execution time: %d ms \n", (duration+ timeSpan));
+    system("pause");
 }
