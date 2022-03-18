@@ -4,6 +4,7 @@
 #include <vector>
 #include <thread>
 #include <cmath>
+#include <stdexcept>
 
 using namespace std;
 
@@ -41,13 +42,18 @@ public:
 
     ~VehicleTracker() {}
 
-    void ReadDataFile(string  filename, float minLat, float maxLat, float minLng, float maxLng)
+    void ReadDataFile(string filename, float minLat, float maxLat, float minLng, float maxLng)
     {
     
        ifstream binaryFile;
        int size = 0;
 
        binaryFile.open(filename, ios::binary);
+       if (!binaryFile.is_open())
+       {
+            cout << "Cannot open file "  << filename << endl;;
+            throw runtime_error("Missing or invalid data file");
+       }
        binaryFile.seekg(0, ios::end);
        size = static_cast<int>(binaryFile.tellg());
        binaryFile.seekg(0, ios::beg);
